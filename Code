@@ -1,0 +1,148 @@
+!pip install pennylane --quiet
+
+import pennylane as qml
+from pennylane import numpy as pnp
+import numpy as np
+import yfinance as yf
+import pandas as pd
+import requests
+from io import StringIO
+import matplotlib.pyplot as plt
+
+STOCKS_COUNT = 256
+QUBITS = 8
+CAPITAL = 1500000
+RISK_LAMBDA = 2.0
+DAYS_HORIZON = 200
+
+def fetch_tickers():
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    resp = requests.get(url, headers=headers)
+    df = pd.read_html(StringIO(resp.text))[0]
+    return [s.replace('.', '-') for s in df['Symbol'][:STOCKS_COUNT]]
+
+symbols = fetch_tickers()
+print(f"Downloading data for {len(symbols)} stocks...")
+
+raw_download = yf.download(symbols, period="1y", progress=False)
+
+if isinstance(raw_download.columns, pd.MultiIndex):
+    if 'Adj Close' in raw_download.columns.levels[0]:
+        prices = raw_download['Adj Close']
+    else:
+        prices = raw_download['Close']
+else:
+    prices = raw_download.get('Adj Close', raw_download.get('Close'))
+
+prices = prices.ffill().bfill().fillna(0)
+if prices.shape[1] < STOCKS_COUNT:
+    padding = pd.DataFrame(0, index=prices.index, columns=[f"CASH_{i}" for i in range(STOCKS_COUNT - prices.shape[1])])
+    prices = pd.concat([prices, padding], axis=1)
+prices = prices.iloc[:, :STOCKS_COUNT]
+
+returns_df = prices.pct_change().fillna(0)
+avg_returns = np.nan_to_num(returns_df.mean().values)
+cov_matrix = np.nan_to_num(returns_df.cov().values)
+individual_risks = np.sqrt(np.diag(cov_matrix))
+
+dev = qml.device("default.qubit", wires=QUBITS)
+
+@qml.qnode(dev)
+def get_weights(params):
+    qml.StronglyEntanglingLayers(weights=params, wires=range(QUBITS))
+    return qml.probs(wires=range(QUBITS))
+
+def objective(params):
+    w = get_weights(params)
+    portfolio_return = pnp.dot(w, avg_returns)
+    portfolio_risk = pnp.dot(w, pnp.dot(cov_matrix, w))
+    return (RISK_LAMBDA * portfolio_risk) - portfolio_return
+
+weights_shape = qml.StronglyEntanglingLayers.shape(n_layers=6, n_wires=QUBITS)
+theta = pnp.random.random(weights_shape, requires_grad=True)
+optimizer = qml.AdamOptimizer(stepsize=0.01)
+
+print("Starting Quantum Optimization...")
+for i in range(61):
+    theta, score = optimizer.step_and_cost(objective, theta)
+    if i % 20 == 0:
+        print(f"Step {i} | Score: {score:.6f}")
+
+final_w = get_weights(theta)
+top_idx = np.argsort(final_w)[-10:][::-1]
+asset_names = prices.columns.tolist()
+final_w = get_weights(theta)
+asset_names = prices.columns.tolist()
+
+print("\n--- FULL QUANTUM PORTFOLIO ALLOCATION (256 ASSETS) ---")
+print(f"{'Ticker':<10} | {'Weight':<10} | {'Value (INR)':<15}")
+print("-" * 40)
+
+final_w = get_weights(theta)
+asset_names = prices.columns.tolist()
+
+sorted_indices = np.argsort(final_w)[::-1]
+
+print("\n--- FULL PORTFOLIO: MAX TO MIN ALLOCATION ---")
+print(f"{'Rank':<5} | {'Ticker':<10} | {'Weight':<10} | {'Value (INR)':<15}")
+print("-" * 55)
+
+for rank, i in enumerate(sorted_indices, 1):
+    name, weight = asset_names[i], final_w[i]
+
+    if weight < 1e-7:
+        continue
+
+    if "CASH" not in name:
+        print(f"{rank:<5} | {name:<10} | {weight*100:8.4f}% | INR {weight * CAPITAL:10.2f}")
+
+daily_mu = np.dot(final_w, avg_returns)
+portfolio_volatility = np.sqrt(np.dot(final_w, np.dot(cov_matrix, final_w)))
+days_range = np.arange(0, DAYS_HORIZON + 1)
+forecast_values = CAPITAL * ((1 + daily_mu) ** days_range)
+
+plt.style.use('ggplot')
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+scatter = ax1.scatter(individual_risks, avg_returns, alpha=0.4, color='royalblue',
+                      label='Individual Assets', picker=True)
+
+ax1.scatter(portfolio_volatility, daily_mu, color='red', s=150, edgecolors='black',
+            label='Quantum Portfolio', zorder=5)
+
+ax1.set_title("Risk vs. Return Analysis (Click a dot for Details)")
+ax1.set_xlabel("Volatility (Risk)")
+ax1.set_ylabel("Expected Daily Return")
+ax1.legend()
+
+ax2.plot(days_range, forecast_values, color='forestgreen', linewidth=2, label='Projected Value')
+ax2.fill_between(days_range, CAPITAL, forecast_values, color='green', alpha=0.1)
+ax2.axhline(y=CAPITAL, color='black', linestyle='--', alpha=0.5)
+ax2.set_title(f"{DAYS_HORIZON}-Day Growth Forecast")
+ax2.set_xlabel("Days")
+ax2.set_ylabel("Portfolio Value (INR)")
+ax2.legend()
+
+def on_pick(event):
+    if event.artist == scatter:
+        ind = event.ind[0]
+        ticker_name = asset_names[ind]
+        ticker_risk = individual_risks[ind]
+        ticker_ret = avg_returns[ind]
+
+        invested_amt = final_w[ind] * CAPITAL
+        allocation_pct = final_w[ind] * 100
+
+        # Display the info in the console
+        print(f"\n" + "-"*30)
+        print(f"ASSET:      {ticker_name}")
+        print(f"INVESTED:   INR {invested_amt:,.2f} ({allocation_pct:.4f}%)")
+        print(f"DAILY RET:  {ticker_ret*100:.5f}%")
+        print(f"RISK (VOL): {ticker_risk:.5f}")
+        print("-"*30)
+
+fig.canvas.mpl_connect('pick_event', on_pick)
+
+plt.tight_layout()
+plt.show()
