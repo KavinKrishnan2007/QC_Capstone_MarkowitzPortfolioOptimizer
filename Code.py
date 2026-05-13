@@ -82,9 +82,6 @@ print("\n--- FULL QUANTUM PORTFOLIO ALLOCATION (256 ASSETS) ---")
 print(f"{'Ticker':<10} | {'Weight':<10} | {'Value (INR)':<15}")
 print("-" * 40)
 
-final_w = get_weights(theta)
-asset_names = prices.columns.tolist()
-
 sorted_indices = np.argsort(final_w)[::-1]
 
 print("\n--- FULL PORTFOLIO: MAX TO MIN ALLOCATION ---")
