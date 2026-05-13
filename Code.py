@@ -74,13 +74,13 @@ for i in range(61):
 final_w = get_weights(theta)
 top_idx = np.argsort(final_w)[-10:][::-1]
 asset_names = prices.columns.tolist()
-print("Top 10 Selected Assets:")
-for idx in top_idx:
-    print(asset_names[idx], final_w[idx])
 
 print("\n--- FULL QUANTUM PORTFOLIO ALLOCATION (256 ASSETS) ---")
 print(f"{'Ticker':<10} | {'Weight':<10} | {'Value (INR)':<15}")
 print("-" * 40)
+
+final_w = get_weights(theta)
+asset_names = prices.columns.tolist()
 
 sorted_indices = np.argsort(final_w)[::-1]
 
