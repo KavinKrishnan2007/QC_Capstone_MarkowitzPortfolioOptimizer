@@ -18,6 +18,7 @@ Portfolio optimization is computationally challenging as the number of assets in
 **Background**
 
 **Classical Portfolio Optimization**
+
 Objective: Minimize risk for a target return using the Markowitz mean–variance framework
 Minimize 𝜆𝑤TΣ𝑤 − 𝜇T𝑤
 Variables:
@@ -28,11 +29,13 @@ Variables:
 Challenge: Computationally expensive for hundreds of assets due to combinatorial complexity.
 
 **Methodology**
+
 **Data Acquisition**
 - Top 256 equity tickers dynamically fetched from Wikipedia.
 - Historical price data downloaded for 1 year.
 - Computed daily returns, mean returns, and covariance matrix.
 **Quantum Model & VQE Implementation**
+
 Simulator: 8-qubit PennyLane simulator
 Ansatz: Strongly Entangling Layers with 4 variational layers
 Gates: Parameterized RX, RY, RZ rotations + CNOT entanglement gates
@@ -48,6 +51,7 @@ Workflow:
 - VQE compresses allocations into 8 qubits, making it hardware-efficient and NISQ-compatible.
 
 **Objective Function**
+
 C(θ) = 𝜆𝑤TΣ𝑤 − 𝜇T𝑤
 where w = QuantumProbabilities(θ) extracted from the parameterized circuit.
 
@@ -58,10 +62,12 @@ where w = QuantumProbabilities(θ) extracted from the parameterized circuit.
 - Growth projection simulated
 
 **Results & Visualization**
+
 **Risk–Return Scatter:**
 - Shows individual asset risk vs return.
 - Quantum-optimized portfolio lies along the efficient frontier. 
 **Portfolio Growth Projection:**
+  
 300-day simulation illustrates potential capital growth using expected daily returns.
 **Hardware Execution Results:**
 - Compared simulator vs 27-qubit quantum processor.
@@ -81,10 +87,12 @@ where w = QuantumProbabilities(θ) extracted from the parameterized circuit.
 - Provides a foundation for future quantum financial applications.
 
 **Requirements**
+
 Python ≥ 3.8
 PennyLane
 NumPy, Pandas, Matplotlib
 Qiskit (for hardware backend execution)
 
 **License**
+
 MIT License
