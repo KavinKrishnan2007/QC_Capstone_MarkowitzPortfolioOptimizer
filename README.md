@@ -74,6 +74,13 @@ where w = QuantumProbabilities(θ) extracted from the parameterized circuit.
 - Minor increase in risk due to hardware noise, but return profile remains superior.
 - Top allocations (e.g., CIEN: 11.15%, GLW: 10.34%) highlight the model’s ability to prioritize key assets while maintaining diversification.
 
+**Backtesting :**
+- Enforces strict temporal train-test split eliminating all hindsight bias completely.
+- Quantum circuit trained exclusively on 12 months of historical price data.
+- Portfolio weights confronted against 3 months of completely unseen market conditions.
+- Real compounded INR values computed daily using actual stock price movements.
+- Equal-weight benchmark exposes whether quantum optimization genuinely adds measurable investment value.
+
 **Limitations:**
 - Classical covariance estimation remains computationally heavy.
 - Historical data assumptions may not reflect future behavior.
