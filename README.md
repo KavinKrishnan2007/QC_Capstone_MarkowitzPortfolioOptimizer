@@ -4,16 +4,19 @@
 Team: Krishnam, Anushri, Kavin
 
 **Overview**
+
 This project presents a hybrid quantum–classical framework for financial portfolio optimization using a VQE-style approach implemented in PennyLane. The goal is to determine optimal asset allocations that balance expected return and portfolio risk using historical market data.
 Traditional Markowitz mean–variance optimization becomes computationally expensive as the number of assets grows. By leveraging a variational quantum approach, we compress high-dimensional portfolio spaces into a small number of qubits, demonstrating the feasibility of near-term quantum methods (NISQ era) for real-world financial decision-making.
 
 **Why We Chose This Problem**
+
 Portfolio optimization is computationally challenging as the number of assets increases. Using hybrid quantum-classical methods allows us to:
 - Explore scalable approaches for large asset sets.
 - Apply VQE-style variational quantum algorithms to practical finance problems.
 - Evaluate quantum performance under real-world hardware constraints.
 
 **Background**
+
 **Classical Portfolio Optimization**
 Objective: Minimize risk for a target return using the Markowitz mean–variance framework
 Minimize 𝜆𝑤TΣ𝑤 − 𝜇T𝑤
