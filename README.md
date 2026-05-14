@@ -1,4 +1,4 @@
-# QC_Capstone_MarkowitzPortfolioOptimizer-
+# QC_Capstone_MarkowitzPortfolioOptimizer
 **Quantum Portfolio Optimization Using Variational Quantum Algorithms**
 
 Team: Krishnam, Anushri, Kavin
